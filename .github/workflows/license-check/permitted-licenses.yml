@@ -1,0 +1,134 @@
+# The following licenses are fully allowed and won't cause any restrictions
+permitted:
+  - MIT
+  - MIT License
+  - The MIT License
+  - "SPDX-License-Identifier: MIT"
+  - MIT-0 # MIT, but no attribution required: https://github.com/aws/mit-0
+  - Apache 2.0
+  - Apache License
+  - Apache License 2.0
+  - Apache License, 2.0
+  - Apache License, Version 2.0
+  - Apache License, version 2.0
+  - Apache License Version 2.0
+  - Apache License version 2.0
+  - Apache Software License - Version 2.0
+  - Apache-2.0
+  - Apache 2
+  - ASF 2.0 # cglib-nodep (cglib:cglib-nodep:3.3.0 - https://github.com/cglib/cglib/cglib-nodep)
+  - The Apache License, Version 2.0
+  - asl # https://github.com/jbossas/jboss-vfs/blob/e581c452979fe62eb4c355fe0a6501bab9fed4d8/pom.xml#L41C29-L41C29
+  - Apache Software Licenses # Log4j Implemented Over SLF4J (org.slf4j:log4j-over-slf4j:1.7.36 - http://www.slf4j.org)
+  - The Apache Software License, Version 2.0
+  - Public Domain
+  - Public Domain, per Creative Commons CC0
+  - BSD License 3
+  - BSD 3-clause License w/nuclear disclaimer # https://github.com/jai-imageio/jai-imageio-core/blob/master/LICENSE.txt
+  - BSD-3-Clause
+  - BSD 3-Clause License
+  - FreeBSD License
+  - EDL 1.0 # Jakarta Activation (com.sun.activation:jakarta.activation:2.0.1 - https://github.com/eclipse-ee4j/jaf/jakarta.activation), similar to BSD-3 clause: https://www.eclipse.org/org/documents/edl-v10.php
+  - Eclipse Distribution License - v 1.0
+  - Eclipse Distribution License v. 1.0
+  - Eclipse Distribution License
+  - EDL
+  - BSD-2-Clause
+  - The BSD 2-Clause License
+  - New BSD
+  - Bouncy Castle Licence
+  - UnRar License # https://github.com/junrar/junrar/blob/master/LICENSE
+  - The W3C Software License # https://www.w3.org/Consortium/Legal/copyright-software-19980720
+  - Unicode/ICU License # https://www.unicode.org/copyright.html#License
+  - GWT Terms # https://www.gwtproject.org/terms.html
+
+# The following licenses will be accepted but cause restrictions which is why certain warnings will be printed
+permitted-with-warning:
+  # WEAK COPYLEFT
+  - name: GNU Lesser Public License
+    warning: LGPL includes a weak copyleft that requires the LGPL library to be exchangeable.
+  - name: GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1
+    warning: LGPL includes a weak copyleft that requires the LGPL library to be exchangeable.
+  - name: LGPL-2.1-or-later
+    warning: LGPL includes a weak copyleft that requires the LGPL library to be exchangeable.
+  - name: GNU Lesser General Public License
+    warning: LGPL includes a weak copyleft that requires the LGPL library to be exchangeable.
+  - name: GNU LESSER GENERAL PUBLIC LICENSE, version 3 (LGPL-3.0)
+    warning: LGPL includes a weak copyleft that requires the LGPL library to be exchangeable.
+  - name: GNU Lesser General Public License (LGPL)
+    warning: LGPL includes a weak copyleft that requires the LGPL library to be exchangeable.
+  - name: GNU Library General Public License v2.1 or later
+    warning: LGPL includes a weak copyleft that requires the LGPL library to be exchangeable.
+  - name: LGPL 2.1
+    warning: LGPL includes a weak copyleft that requires the LGPL library to be exchangeable.
+  - name: LGPL-2.1
+    warning: LGPL includes a weak copyleft that requires the LGPL library to be exchangeable.
+  - name: GPL2 w/ CPE
+    warning: GPL with Classpath Exception includes a weak copyleft that requires the GPL library to be exchangeable.
+  - name: The GNU General Public License (GPL), Version 2, With Classpath Exception
+    warning: GPL with Classpath Exception includes a weak copyleft that requires the GPL library to be exchangeable.
+  - name: GNU General Public License, version 2 with the GNU Classpath Exception
+    warning: GPL with Classpath Exception includes a weak copyleft that requires the GPL library to be exchangeable.
+  - name: GPL-2.0-with-classpath-exception
+    warning: GPL with Classpath Exception includes a weak copyleft that requires the GPL library to be exchangeable.
+  - name: Mozilla Public License
+    warning: Mozilla Public License includes a weak copyleft that requires the LGPL library to be exchangeable.
+  - name: MPL
+    warning: Mozilla Public License includes a weak copyleft that requires the LGPL library to be exchangeable.
+  - name: Mozilla Public License Version 1.1
+    warning: Mozilla Public License includes a weak copyleft that requires the LGPL library to be exchangeable.
+  - name: Mozilla Public License 1.1 (MPL 1.1)
+    warning: Mozilla Public License includes a weak copyleft that requires the LGPL library to be exchangeable.
+  - name: Mozilla Public License 2.0 (MPL-2.0)
+    warning: Mozilla Public License includes a weak copyleft that requires the LGPL library to be exchangeable.
+  - name: Mozilla Public License, Version 2.0
+    warning: Mozilla Public License includes a weak copyleft that requires the LGPL library to be exchangeable.
+  - name: Mozilla Public License Version 2.0
+    warning: Mozilla Public License includes a weak copyleft that requires the LGPL library to be exchangeable.
+  - name: MPL 2.0
+    warning: Mozilla Public License includes a weak copyleft that requires the LGPL library to be exchangeable.
+  - name: Common Development and Distribution License # https://opensource.stackexchange.com/a/8267
+    warning: CDDL includes a weak copyleft that requires the CDDL library to be exchangeable.
+  - name: CDDL
+    warning: CDDL includes a weak copyleft that requires the CDDL library to be exchangeable.
+  - name: CDDL License
+    warning: CDDL includes a weak copyleft that requires the CDDL library to be exchangeable.
+  - name: CDDL + GPLv2 with classpath exception
+    warning: CDDL & GPLv2+CE include a weak copyleft that requires these libraries to be exchangeable.
+  - name: CDDL/GPLv2+CE
+    warning: CDDL & GPLv2+CE include a weak copyleft that requires these libraries to be exchangeable.
+  - name: CPL
+    warning: CPL include a weak copyleft that requires these libraries to be exchangeable.
+
+  # ADVERTISING RESTRICTIONS
+  - name: BSD 4 clause
+    warning: "All advertising materials mentioning features or use of this software must display the following acknowledgement: This product includes software developed by the <copyright holder>."
+  - name: BSD original
+    warning: "All advertising materials mentioning features or use of this software must display the following acknowledgement: This product includes software developed by the <copyright holder>."
+  - name: BSD License
+    warning: "BSD License does not specify exactly which clauses apply. Worst case this could be BSD 4 clause with the following warning: All advertising materials mentioning features or use of this software must display the following acknowledgement: This product includes software developed by the <copyright holder>."
+  - name: BSD
+    warning: "BSD License does not specify exactly which clauses apply. Worst case this could be BSD 4 clause with the following warning: All advertising materials mentioning features or use of this software must display the following acknowledgement: This product includes software developed by the <copyright holder>."
+  - name: The BSD License
+    warning: "BSD License does not specify exactly which clauses apply. Worst case this could be BSD 4 clause with the following warning: All advertising materials mentioning features or use of this software must display the following acknowledgement: This product includes software developed by the <copyright holder>."
+  - name: Indiana University Extreme! Lab Software License # https://x-stream.github.io/mxparser/licenses.html
+    warning: "Similar to BSD-4 clause: All advertising materials mentioning features or use of this software must display the following acknowledgement: This product includes software developed by the <copyright holder>."
+  # Modification
+  - name: Eclipse Public License - v 2.0
+    warning: "Modification of any EPL-licensed component requires licensing under the EPL."
+  - name: Eclipse Public License v2.0
+    warning: "Modification of any EPL-licensed component requires licensing under the EPL."
+  - name: EPL-2.0
+    warning: "Modification of any EPL-licensed component requires licensing under the EPL."
+  - name: Eclipse Public License - Version 1.0
+    warning: "Modification of any EPL-licensed component requires licensing under the EPL."
+
+# Sometimes maven won't be able to fetch any licenses for artifacts or an artifact's license
+# should not be accepted in general but in one case it should. These artifacts should be ignored
+# and therefore added to the following list.
+ignored-artifacts:
+  - serializer #Apache License, Version 2.0
+  - xalan #Apache License, Version 2.0
+  - jace #p8-client:jace
+  - colt # CERN and LGPL https://dst.lbl.gov/ACSSoftware/colt/license.html
+  - tapestry # Apache 2.0

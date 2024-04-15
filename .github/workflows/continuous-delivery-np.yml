@@ -1,0 +1,233 @@
+name: Continuous Delivery
+
+on:
+  workflow_call:
+    inputs:
+      timeoutMinutes:
+        description: 'Amount of minutes, after that a build shall be aborted'
+        required: false
+        type: number
+        default: 10
+        
+      releasePrefix:
+        description: 'if needed, e.g. for a 4-digit version, this will be the prefix to the version calculated by the version action'
+        required: false
+        type: string
+        default: ''        
+        
+      releaseBranches:        
+        description: 'Comma separated list of branches that will generate the release tags.'
+        required: false
+        type: string
+        default: '${{ github.event.repository.default_branch }}'
+      fetchAllTags:
+        required: false
+        type: boolean
+        default: false
+      tagPrefix:
+        required: false
+        type: string
+        default: 'v'        
+        
+      javaDistribution:
+        description: 'The Java distribution to use. (defaults to eclipse "temurin")'
+        required: false
+        type: string
+        default: 'temurin'
+      # only one version at the time
+      # for the syntax see https://github.com/actions/setup-java#supported-version-syntax
+      jdkVersion:
+        required: false
+        type: string
+        default: '17'
+
+      skipTests:
+        required: false
+        type: boolean
+        default: false
+      additionalMavenOpts:
+        required: false
+        type: string
+        default: ''
+
+      mavenDeploy:
+        required: false
+        type: boolean
+        default: true
+      publicMaven:
+        required: false
+        type: boolean
+        default: true
+
+      # files to be attached to the github release - call syntax is like followed (pipe + newline for every file):
+      # releaseFiles: |
+      #   file1.txt
+      #   file2.txt
+      #   ....
+      releaseFiles:
+        required: false
+        type: string
+        default: ''
+
+      mattermostChannel:
+        required: false
+        type: string
+        default: "neverpile-ci"
+      notifyMattermost:
+        required: false
+        type: boolean
+        default: true
+      multiModule:
+        description: Whether the project is a multi-module build. Determines whether the aggregate maven goal will be used.
+        required: false
+        type: boolean
+        default: false
+        
+    # for more info: https://docs.github.com/en/actions/using-workflows/reusing-workflows#using-outputs-from-a-reusable-workflow
+    outputs:
+      releaseVersion:
+        description: "increased version, according to semver"
+        value: ${{ jobs.build.outputs.releaseVersion }}
+
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: ${{ inputs.timeoutMinutes}}
+    env:
+      # This will suppress any download for dependencies and plugins or upload messages which would clutter the console log.
+      # `showDateTime` will show the passed time in milliseconds. You need to specify `--batch-mode` to make this work.
+      MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+      # As of Maven 3.3.0 instead of this you may define these options in `.mvn/maven.config` so the same config is used
+      # when running from the command line.
+      # `installAtEnd` and `deployAtEnd` are only effective with recent version of the corresponding plugins.
+      MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
+      REGISTRY_URL: ${{ secrets.LEVIGO_NEXUS_REGISTRY_RELEASES }}
+    outputs:
+      releaseVersion: ${{ inputs.releasePrefix }}${{ steps.semanticversion.outputs.new_version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      ## Set new version
+      - name: Bump version and create tag
+        id: semanticversion
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          release_branches: ${{ inputs.releaseBranches }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          fetch_all_tags: ${{ inputs.fetchAllTags }}
+          tag_prefix: ${{ inputs.tagPrefix }}
+
+      - name: Verify and print new build number
+        run: |
+          if echo '${{ steps.semanticversion.outputs.new_tag }}' |grep -Eq '^${{ inputs.tagPrefix }}[0-9]+[.][0-9]+[.][0-9]+$'; then
+            echo Tag '${{ steps.semanticversion.outputs.new_tag }}', New version '${{ steps.semanticversion.outputs.new_version }}', Changelog '${{ steps.semanticversion.outputs.changelog }}'
+          else
+            echo 'unexpected tag format - aborting'
+            exit -1
+          fi
+
+      ## Configure JDK
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ inputs.javaDistribution }}
+          java-version: ${{ inputs.jdkVersion }}
+          cache: 'maven'
+
+      ###
+      ## neverpile specific step
+      ###
+      - name: Prepare maven settings public
+        if: ${{ inputs.publicMaven }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p ~/.m2
+          echo "<settings><servers><server><id>github</id><username>x-access-token</username><password>${GITHUB_TOKEN}</password></server></servers></settings>" > ~/.m2/settings.xml 
+
+      - name: Set version
+        id: version
+        run: |
+          echo Releasing as ${{ steps.semanticversion.outputs.new_version }}
+          mvn $MAVEN_CLI_OPTS versions:set -DnewVersion=${{ steps.semanticversion.outputs.new_version }}
+
+      ## ----------------------------------------
+      ## A - Build and Test
+      - name: Perform build - option with tests
+        if: ${{ ! inputs.skipTests }}
+        run: mvn $MAVEN_CLI_OPTS ${{ inputs.additionalMavenOpts }} package -Dmaven.test.failure.ignore=true -Djib.skip=true
+
+      - name: Publish Test Report
+        if: ${{ ! inputs.skipTests }}
+        uses: scacap/action-surefire-report@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_test_failures: true
+          fail_if_no_tests: true
+
+      ## B - Build without running Tests
+      - name: Perform build - option without tests
+        if: inputs.skipTests
+        run: mvn $MAVEN_CLI_OPTS ${{ inputs.additionalMavenOpts }} verify -DskipTests
+      ## ----------------------------------------
+
+      ###
+      ## neverpile specific step
+      ###
+      - name: Deploy package public
+        if: ${{ inputs.publicMaven && inputs.mavenDeploy }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY_URL: ${{ secrets.REPOSITORY_URL }}
+          REPOSITORY_USERID: ${{ secrets.REPOSITORY_USERID }}
+          REPOSITORY_CREDENTIALS: ${{ secrets.REPOSITORY_CREDENTIALS }}
+        run: |
+          mkdir -p ~/.m2
+          echo "<settings><servers><server><id>neverpile</id><username>${REPOSITORY_USERID}</username><password>${REPOSITORY_CREDENTIALS}</password></server></servers></settings>" > ~/.m2/settings.xml 
+          mvn $MAVEN_CLI_OPTS deploy -Dmaven.test.skip.exec=true -Dmaven.install.skip=true -DaltDeploymentRepository=neverpile::default::${REPOSITORY_URL}
+
+      - name: Deploy packages custom
+        if: ${{ ! inputs.publicMaven && inputs.mavenDeploy }}
+        run: mvn $MAVEN_CLI_OPTS deploy -Dmaven.test.skip.exec=true -Dmaven.install.skip=true
+
+      - name: create release and upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.semanticversion.outputs.new_tag }}
+          name: ${{ steps.semanticversion.outputs.new_version }}
+          draft: false
+          prerelease: false
+          files: |
+            ${{ inputs.releaseFiles }}
+
+      # we really need this if the release should trigger a second workflow. the step above will NOT trigger a second workflow.
+      - name: dispatch release event
+        run: |
+          curl \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/dispatches \
+            -d '{"event_type":"release_created","client_payload":{"version":"${{ steps.semanticversion.outputs.new_version }}"}}'      
+            
+      - name: Notify Mattermost
+        uses: 8398a7/action-slack@v3.16.2
+        if: inputs.notifyMattermost && failure()
+        with:
+          username: GitHub
+          icon_emoji: octocat
+          channel: ${{ inputs.mattermostChannel }}
+          status: ${{ job.status }}
+          fields: repo,message,commit,author
+          text: Released new version `${{ steps.semanticversion.outputs.new_version }}` of *${{ github.repository }}* failed!
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.MATTERMOST_WEBHOOK_URL }}
+
+  call-license-check:
+    uses: ./.github/workflows/license-check.yml
+    secrets: inherit
+    with:
+      multiModule: ${{ inputs.multiModule }}

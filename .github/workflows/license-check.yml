@@ -1,0 +1,70 @@
+name: License Check
+# Documentation of this workflow: https://levigo.de/info/pages/viewpage.action?pageId=220529226
+on:
+  workflow_call:
+    inputs:
+      excludedGroups:
+        description: Which groups should be excluded from the license check. For more detailed information, see https://www.mojohaus.org/license-maven-plugin/add-third-party-mojo.html#excludedGroups
+          Note that "excludeTransitiveDependencies" is set to true, so
+          transitive dependencies of excluded groups will be excluded, too.
+        type: string
+        required: false
+        default: .*(levigo|jadice|neverpile).*
+      multiModule:
+        description: Whether the project is a multi-module build. Determines whether the aggregate maven goal will be used.
+        required: false
+        type: boolean
+        default: false
+      jdkVersion:
+        description: 'The JDK version to use. (defaults to "11")'
+        required: false
+        type: string
+        default: '11'
+      javaDistribution:
+        description: 'The Java distribution to use. (defaults to eclipse "temurin")'
+        required: false
+        type: string
+        default: 'temurin'
+
+env:
+  MVN_GOAL: ${{ inputs.multiModule && 'aggregate-add-third-party' || 'add-third-party' }}
+
+jobs:
+  custom-license-checker:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ inputs.javaDistribution }}
+          java-version: ${{ inputs.jdkVersion }}
+          cache: 'maven'
+
+      - name: Download files
+        env:
+          BASE_URL: https://github.com/levigo/reusable-workflows-pub/raw/main/.github/workflows/license-check
+        run: |
+          curl -H 'Accept: application/vnd.github.v4.raw' -O -L ${BASE_URL}/third-party-file_template.ftl
+          curl -H 'Accept: application/vnd.github.v4.raw' -O -L ${BASE_URL}/license-check.py
+          curl -H 'Accept: application/vnd.github.v4.raw' --output-dir ".github" -O -L ${BASE_URL}/permitted-licenses.yml
+
+      - name: Run license-maven-plugin
+        run: |
+          mvn org.codehaus.mojo:license-maven-plugin:2.4.0:$MVN_GOAL \
+            -Dlicense.excludedGroups="${{ inputs.excludedGroups }}" \
+            -Dlicense.excludeTransitiveDependencies=true \
+            -Dlicense.excludedScopes=test,provided \
+            -Dlicense.fileTemplate=./third-party-file_template.ftl \
+            -Dlicense.thirdPartyFilename=LICENSES.yml
+
+      - name: Check Licenses
+        run: python license-check.py
+
+      - name: Upload License Check Result
+        uses: actions/upload-artifact@v4.3.1
+        if: always()
+        with:
+          name: license-check-result.yml
+          path: license-check-result.yml

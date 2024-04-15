@@ -1,0 +1,57 @@
+name: Update Readme.md
+
+on:
+  workflow_call:
+    inputs:
+      releaseVersion:
+        required: true
+        type: string
+
+      tagPrefix:
+        required: false
+        type: string
+        default: 'v'
+
+      timeoutMinutes:
+        required: false
+        type: number
+        default: 5
+
+      mainBranch:
+        required: false
+        type: string
+        default: 'master'
+jobs:
+  updateReadmeMd:
+    runs-on: ubuntu-22.04
+    timeout-minutes: ${{ inputs.timeoutMinutes }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # first sed: replace the maven code-snipptes, if present -> <version>0.2.7</version> will e.g. turn into <version>0.2.8</version>
+      # second sed: replace the display text of the version badge
+      # third sed: replace the version within the url, so if you click on the badge, you get rerouted to the url of the new version
+      #
+      # this means that you might have a badge "current version 0.2.7", which leads to "https://github.com/levigo/github-action-primer/tree/v0.2.7"
+      # if you upgrade to 0.2.8, the second sed will therefore take care of a "current version 0.2.8", the third sed for a
+      # "https://github.com/levigo/github-action-primer/tree/v0.2.8"
+      - name: Edit README.md to contain version number
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git checkout ${{ inputs.mainBranch }}
+          git reset --hard HEAD      
+          
+          sed -ri "s,<version>.*</version>,<version>${{ inputs.releaseVersion }}</version>," README.md
+          sed -ri "s,version-[0-9a-z.]+-,version-${{ inputs.releaseVersion }}-," README.md
+          sed -ri "s,${{ github.repository }}/tree/[0-9a-z.]+,${{ github.repository }}/tree/${{ inputs.tagPrefix }}${{ inputs.releaseVersion }}," README.md
+          
+          git add README.md
+          git commit -m "Edit README.md to contain correct version ${{ inputs.releaseVersion }}"
+
+      # push the changes ATTENTION: you MUST exclude the readme.md from the push triggers, or you end up risking an endless loop of builds
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          branch: ${{ inputs.mainBranch }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
